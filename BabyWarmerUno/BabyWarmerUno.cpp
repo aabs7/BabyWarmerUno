@@ -54,7 +54,9 @@ void displayBABY();
 void titititi();
 void titi();
 
-
+//monitoring for 
+bool startMonitor = false;
+int second = 0;
 
 //TIMER FOR DISPLAY UPDATE
 Timerr timerr;
@@ -69,7 +71,7 @@ Adafruit_MAX31865 maxSkin;
 
 float skin_temperature = 0.0;
 float air_temperature = 0.0;
-float set_temperature = 36.50;
+float set_temperature = 33.50;
 float set_temperature_copy = set_temperature;
 
 int optimumTemp = 35;
@@ -86,6 +88,7 @@ bool set_up_pressed = false;
 bool set_pressed = false;
 bool set_down_pressed = false;
 bool buzzer_stop_pressed = false;
+bool stop_buzzer = false;
 bool button_change = false;
 bool emergencyAlert = false;
 //preheat heater
@@ -119,38 +122,37 @@ int main(void)
 // 	controls.stopBuzzer();
 	////////////////////
 	
-	//wait while preheat condition is meet.
-  	while(!preHeat){
- 		 if(displayUpdate){
-			displayUpdate = false;
-  			maxSkin.begin(1);
-  			skin_temperature = maxSkin.temperature(100.0,430.0);
-  				
-    		max1.MAX7219_init();
-    		max2.MAX7219_init();
-			//these above init should be done to initialize spi 
-   			//sendToDisplay(air_temperature,skin_temperature,set_temperature);
-			displayPreHeat();
- 			sendToDisplayBelow(skin_temperature);
-			 if(skin_temperature > 35) {
-				controls.stopHeater();
-				preHeat = true;
-				titititi();
-				}
-			else if(skin_temperature <35) {
-				controls.startHeater();
-				}
- 		 }
- 		  
- 		  else{
-			   asm volatile ("nop");
- 		  }
- 			 
-  	}
+	wait while preheat condition is meet.
+   	while(!preHeat){
+  		 if(displayUpdate){
+ 			displayUpdate = false;
+   			maxSkin.begin(1);
+   			skin_temperature = maxSkin.temperature(100.0,430.0);
+   				
+     		max1.MAX7219_init();
+     		max2.MAX7219_init();
+ 			//these above init should be done to initialize spi 
+    			//sendToDisplay(air_temperature,skin_temperature,set_temperature);
+ 			displayPreHeat();
+  			sendToDisplayBelow(skin_temperature);
+ 			 if(skin_temperature > 35) {
+ 				controls.stopHeater();
+ 				preHeat = true;
+ 				titititi();
+ 				}
+ 			else if(skin_temperature < 35) {
+ 				controls.startHeater();
+ 				}
+  		 }
+  		  
+  		  else{
+ 			   asm volatile ("nop");
+  		  }
+  			 
+   	}
 	while(1)
 	
 	{
-		
  		check();
  		if(displayUpdate) {
  			//spi for max7219 for display
@@ -167,32 +169,16 @@ int main(void)
 			 }
 			 	
  			//spi for temperature pt100
- 			////maxAir.begin(0); //these are init 
+ 			maxAir.begin(0); //these are init 
  			maxSkin.begin(1);
  			skin_temperature = maxSkin.temperature(100.0, 430.0);
+			air_temperature = maxAir.temperature(100.0, 430.0);
 			 
-			 //checking for emergency conditions and acting according to it.
-			 // if not emergency, act according to setpoint temperature of skin
-			 // if at emergency, no matter what stop or start heater according to critical high or low temperature respectively. 
-			 if(skin_temperature > HYPERTHERMIAHIGHTEMPERATURE){
-				 emergencyAlert = true;
-				 controls.stopHeater();
-			 }
-			 else if(skin_temperature < HYPOTHERMIALOWTEMPERATURE){
-				emergencyAlert = true;
-				controls.startHeater();
-			 }
-			 else{
-				 emergencyAlert = false;
-				 controls.stopBuzzer();
-				 if(skin_temperature > set_temperature) {
+				 if(skin_temperature >= (set_temperature-0.1)) {
 					 controls.stopHeater();
-					 }else if(skin_temperature < (set_temperature - 0.2)) {
+					 }else if(skin_temperature <= (set_temperature - 0.2)) {
 					 controls.startHeater();
 				 }
-			 }
-				 
- 			////air_temperature = maxAir.temperature(100.0, 430.0);
  			                                                                                                                                                                                                                               
  			displayUpdate = false;
  		}
@@ -248,15 +234,32 @@ void init_devices() {
 
 void check() {
 	
-	if(skin_temperature > 36.5) {	
-		//controls.startBuzzer();
+	if(skin_temperature >= (set_temperature+0.2)) {
+		if(!startMonitor) {
+			controls.startBuzzer();	
+		}	
+		
+		if(stop_buzzer && !startMonitor) {
+			startMonitor = true;
+			second = 0;
+			stop_buzzer = false;
+			controls.stopBuzzer();
+		}
+		
 		Led.led_do(TS_HIGH_LED, 1);
 		//Led.led_do(TA_HIGH_LED, 1);
 	} else {
-		//controls.stopBuzzer();
+		controls.stopBuzzer();
 		Led.led_do(TS_HIGH_LED, 0);
+		startMonitor = false;
+		second = 0;
 	}
-		
+	if(second >=120) {
+		//why this below line needed when if startMonitor = false, and skin temperature still set_temperature + 0.2 
+		//controls.startBuzzer();
+		startMonitor = false;
+		second = 0;
+	}
 		
 	if(air_temperature > 37) {
 		//controls.startBuzzer();
@@ -267,11 +270,11 @@ void check() {
 		Led.led_do(TS_HIGH_LED, 0);
 	} 
 	
-	
 	//buzzer stop button
 	if(bit_is_clear(BUZZER_STOP_BUTTON_PORT, BUZZER_STOP_BUTTON_PIN) && !buzzer_stop_pressed ) {
 		
 		controls.stopBuzzer();
+		stop_buzzer = true;
 		buzzer_stop_pressed = true;
 	}
 	
@@ -310,21 +313,18 @@ void check() {
 	
 	//set button
 	if(bit_is_clear(SET_BUTTON_PORT, SET_BUTTON_PIN) && !set_pressed) {
-		countpreheat++;
-		if(countpreheat > 50000){
 			button_change = !button_change;
 			if(!button_change) {
 				set_temperature = set_temperature_copy;
+				titi();
 			}
-			controls.startBuzzer();
+			
 			set_pressed = true;
 		}
-	}
 	
 	
-	else if(bit_is_set(SET_BUTTON_PORT, SET_BUTTON_PIN) && set_pressed) {
-		countpreheat = 0;
-		controls.stopBuzzer();
+	
+	else if(bit_is_set(SET_BUTTON_PORT, SET_BUTTON_PIN)) {
 		set_pressed = false;
 	}
 	
@@ -334,7 +334,9 @@ void check() {
 //// ALL ISR Below
 ISR(TIMER1_COMPA_vect) {
 	TCNT1 = 0;
-	
+	if(startMonitor) {
+		second++;
+	}
 	displayUpdate = true;
 }
 

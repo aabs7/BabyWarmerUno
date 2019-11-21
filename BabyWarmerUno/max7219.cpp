@@ -17,10 +17,10 @@ void max7219::MAX7219_init() {
 	spi_init();
 	// Decode mode to "Font Code-B"
 	max7219::MAX7219_writeData(MAX7219_MODE_DECODE, 0xFF);
-
+	max7219::MAX7219_writeData(MAX7219_MODE_TEST,0);
 	// Scan limit runs from 0.
 	max7219::MAX7219_writeData(MAX7219_MODE_SCAN_LIMIT, 7); //7 or 8?
-	max7219::MAX7219_writeData(MAX7219_MODE_INTENSITY, 1);
+	max7219::MAX7219_writeData(MAX7219_MODE_INTENSITY, 0x0f);
 	max7219::MAX7219_writeData(MAX7219_MODE_POWER, ON);
 }
 
