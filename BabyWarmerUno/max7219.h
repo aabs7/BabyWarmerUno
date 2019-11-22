@@ -9,6 +9,8 @@
 #ifndef MAX7219_H_
 #define MAX7219_H_
 
+#include <stdio.h>
+
 #define ON 1
 #define OFF 0
 #define MAX7219_MODE_DECODE       0x09
@@ -76,6 +78,9 @@
 #define B 0b01111111
 #define Y 0b00111011
 
+#define FIRSTINITIALIZE 0
+#define REINITIALIZE	1
+
 class max7219 {
 		private:
 			int num;
@@ -83,7 +88,7 @@ class max7219 {
 			int digits2;
 		public:
 			void MAX7219_set(int numm, int ii, int jj);
-			void MAX7219_init();
+			void MAX7219_init(uint8_t a = 0);
 			void MAX7219_writeData(char data_register, char data);
 			void MAX7219_clearDisplay();
 			void MAX7219_displayNumber(volatile long number);

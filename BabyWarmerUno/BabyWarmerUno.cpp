@@ -131,40 +131,41 @@ int main(void)
 	//wait while preheat condition is meet.
 	bool clear_display = false;
 	bool set_temp_display = false;
-   	while(!preHeat){
-		  
-  		 if(displayUpdate){
-			clear_display = !clear_display;
-			
- 			displayUpdate = false;
-   			maxSkin.begin(1);
-   			skin_temperature = maxSkin.temperature(100.0,430.0);
-     		max1.MAX7219_init();
-     		max2.MAX7219_init();
- 			//these above init should be done to initialize spi 
-    			//sendToDisplay(air_temperature,skin_temperature,set_temperature);
- 			displayPreHeat();
-			 if(clear_display) {
-				 max2.MAX7219_clearDisplay();
-				 //max1.MAX7219_clearDisplay();
-			 } else {
-  				sendToDisplayBelow(skin_temperature);
-			 }
-			 if(skin_temperature > pre_heat_max_temp) {
- 				controls.stopHeater();
- 				preHeat = true;
- 				titititi();
- 				}
- 			else if(skin_temperature < pre_heat_max_temp) {
- 				controls.startHeater();
- 				}
-  		 }
-  		  
-  		  else{
- 			   asm volatile ("nop");
-  		  }
-  			 
-   	}
+	
+    	while(!preHeat){
+ 		  
+   		 if(displayUpdate){
+ 			clear_display = !clear_display;
+ 			
+  			displayUpdate = false;
+    		maxSkin.begin(1);
+    		skin_temperature = maxSkin.temperature(100.0,430.0);
+      		max1.MAX7219_init(REINITIALIZE);
+      		max2.MAX7219_init(REINITIALIZE);
+  			//these above init should be done to initialize spi 
+     			//sendToDisplay(air_temperature,skin_temperature,set_temperature);
+  			displayPreHeat();
+ 			 if(clear_display) {
+ 				 max2.MAX7219_clearDisplay();
+ 				 //max1.MAX7219_clearDisplay();
+ 			 } else {
+   				sendToDisplayBelow(skin_temperature);
+ 			 }
+ 			 if(skin_temperature > pre_heat_max_temp) {
+  				controls.stopHeater();
+  				preHeat = true;
+  				titititi();
+  				}
+  			else if(skin_temperature < pre_heat_max_temp) {
+  				controls.startHeater();
+  				}
+   		 }
+   		  
+   		  else{
+  			   asm volatile ("nop");
+   		  }
+   			 
+    	}
 	   
 	while(1)
 	
@@ -172,8 +173,8 @@ int main(void)
  		check();
  		if(displayUpdate) {
  			//spi for max7219 for display
- 			max1.MAX7219_init(); // these are init
- 			max2.MAX7219_init();
+ 			max1.MAX7219_init(REINITIALIZE); // these are init
+ 			max2.MAX7219_init(REINITIALIZE);
 			 
 			 //buzzer karaing
 			 if(start_buzzer) {
@@ -243,15 +244,15 @@ void init_devices() {
 	//air_temperature = maxAir.temperature(100.0, 430.0);
 	
 	//for display
-	max1.MAX7219_init();
+	max1.MAX7219_init(FIRSTINITIALIZE);
 	max1.MAX7219_set(0,4,4);
 	
 	_delay_ms(10);
 	max2.MAX7219_set(1, 4, 4);
 	_delay_ms(10);
-	max1.MAX7219_init();
+	max1.MAX7219_init(FIRSTINITIALIZE);
 	_delay_ms(10);
-	max2.MAX7219_init();
+	max2.MAX7219_init(FIRSTINITIALIZE);
 	_delay_ms(10);
 	max1.MAX7219_clearDisplay();
 	_delay_ms(30);
@@ -289,7 +290,7 @@ void check() {
 		second = 0;
 	}
 	
-	if(second >= 600) {
+	if(second >= 600) {	//timer prescaled to 200ms so 600 means 2 minutes.
 		//why this below line needed when if startMonitor = false, and skin temperature still set_temperature + 0.2 
 		//controls.startBuzzer();
 		startMonitor = false;
